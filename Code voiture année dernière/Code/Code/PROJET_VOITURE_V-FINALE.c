@@ -289,12 +289,12 @@ void TIM6_CONFIG(uint32_t delay_us)
 /********************** TIM9 INIT GESTION CAPTEUR ULTRASON AVANT ****************/
 void TIM9_CONFIG(void)
 {
-  RCC->APB2ENR |= RCC_APB2ENR_TIM9EN; 
+  RCC->APB2ENR |= RCC_APB2ENR_TIM9EN;  // On lance l'horloge du TIM9
   
-  TIM9->PSC = 16; 
+  TIM9->PSC = 16; // Préscalaire a 16 pour avoir 16Mhz/16=1Mhz =>1us
   
-  TIM9->CR1 |= TIM_CR1_ARPE; 
-  TIM9->CR1 &=~ TIM_CR1_DIR | TIM_CR1_CMS_0 |TIM_CR1_CMS_1;  
+  TIM9->CR1 |= TIM_CR1_ARPE; // Auto-reload est initialisé
+  TIM9->CR1 &=~ TIM_CR1_DIR | TIM_CR1_CMS_0 |TIM_CR1_CMS_1;  // Pour DIR direction est a 0 donc upcounter    CMS_0 CMS_1 On met 10 mode 2 car on est en mode couting up p463
 }
 /************************ FIN TIM9 INIT **********************************/
 
@@ -305,8 +305,8 @@ void TIM10_CONFIG(void)
   
   TIM10->PSC = 16; 
   
-  TIM10->CR1 |= TIM_CR1_ARPE; 
-  TIM10->CR1 &=~ TIM_CR1_DIR | TIM_CR1_CMS_0 |TIM_CR1_CMS_1;  
+  TIM10->CR1 |= TIM_CR1_ARPE; // Auto-reload est initialisé
+  TIM10->CR1 &=~ TIM_CR1_DIR | TIM_CR1_CMS_0 |TIM_CR1_CMS_1;  // Pour DIR direction est a 0 donc upcounter    CMS_0 CMS_1 On met 10 mode 2 car on est en mode couting up p463
 }
 /******************************** FIN TIM10 INIT *****************************/
 
@@ -314,19 +314,17 @@ void TIM10_CONFIG(void)
 void calcul_Distance(uint16_t largeur)
 {
   distance = largeur/58.8235;  // 17/100=58.8235 ->distance en cm/us 
- 
 }
 /**************************************** FIN FONCTION CALCUL DISTANCE ***************************************/
-
 
 /*************************** FONCTION ATTENTE POUR LE TRIGGER DU CAPTEUR ULTRASON AVANT **********************/
 void wait_TIM9_10us(void)
 {
-  TIM9->ARR = 9;
-  TIM9->CR1 |= TIM_CR1_CEN;
-  while( (TIM9->SR & TIM_SR_UIF)==0);
-  TIM9->SR &= ~TIM_SR_UIF;
-  TIM9->CR1 &=~TIM_CR1_CEN;
+  TIM9->ARR = 9; 
+  TIM9->CR1 |= TIM_CR1_CEN; // On lance le compteur 
+  while( (TIM9->SR & TIM_SR_UIF)==0); // On attend que mis a un 1 par le hardware donc détection de quelque chose par l'ultrason
+  TIM9->SR &= ~TIM_SR_UIF; // Remise a zéro pour pouvoir refaire une détection après
+  TIM9->CR1 &=~TIM_CR1_CEN; // On éteint le compteur
 }
 /**************************************** FIN FONCTION ATTENTE **********************************************/
 
@@ -335,10 +333,10 @@ void wait_TIM9_10us(void)
 void wait_TIM10_10us(void)
 {
   TIM10->ARR = 9;
-  TIM10->CR1 |= TIM_CR1_CEN;
-  while( (TIM10->SR & TIM_SR_UIF)==0);
-  TIM10->SR &= ~TIM_SR_UIF;
-  TIM10->CR1 &=~TIM_CR1_CEN;
+  TIM10->CR1 |= TIM_CR1_CEN; // On lance le comteur 
+  while( (TIM10->SR & TIM_SR_UIF)==0);// On attend que mis a un 1 par le hardware donc détection de quelque chose par l'ultrason
+  TIM10->SR &= ~TIM_SR_UIF; // Remise a zéro pour pouvoir refaire une détection après
+  TIM10->CR1 &=~TIM_CR1_CEN;// On éteint le compteur
 }
 /*************************************** FIN FONCTION ATTENTE **********************************************/
 
@@ -370,18 +368,18 @@ void ConfigInterrupt_PA2(void)
 void Generation_Trigger_avant(void) //generation du trigger pour le capteur avant sur PB5
 {
 
-  GPIOB->ODR |= (1<<5);   // trigger a 1
+  GPIOB->ODR |= GPIO_ODR_ODR_5; //(1<<5)  // trigger a 1
   wait_TIM9_10us();   
-  GPIOB->ODR &=~ (1<<5);   // trigger a 0
+  GPIOB->ODR &=~ GPIO_ODR_ODR_5; //(1<<5)   // trigger a 0
 }
 /******************************************* FIN FONCTION *******************************************/
 
 /****************** FONCTION GENERATION TRIGGER POUR CAPTEUR ARRIRERE ********************************/
 void Generation_Trigger_arriere(void) // generation du trigger pour le capteur arriere sur PB3
 {
-  GPIOB->ODR |= (1<<3);   // trigger a 1
+  GPIOB->ODR |= GPIO_ODR_ODR_3; //(1<<3)   // trigger a 1
   wait_TIM10_10us();  
-  GPIOB->ODR &=~ (1<<3);   // trigger a 0
+  GPIOB->ODR &=~ GPIO_ODR_ODR_3; //(1<<3)   // trigger a 0
 }
 /*********************************** FIN FONCTION ********************************************/
 
@@ -391,23 +389,23 @@ void ADC_INIT (void)
 {
   RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; //(1<<9);
   RCC->APB1ENR |= RCC_APB1ENR_COMPEN; //(1<<31);
-  RCC->CR |= RCC_CR_HSION; //(1<<0);                                                            // Horloge HSI on
-  ADC->CCR &=~ ADC_CCR_ADCPRE_0; //(1<<16);                                                          // HSI prescaler divise par 4
+  RCC->CR |= RCC_CR_HSION; //(1<<0);    // Horloge HSI on
+  ADC->CCR &=~ ADC_CCR_ADCPRE_0; //(1<<16); // HSI prescaler divise par 4
   ADC->CCR |= ADC_CCR_ADCPRE_1; //(1<<17);
-  RCC->CFGR &=  ~((1<<26)|(1<<24));
-  RCC->CFGR |= (1<<25);
-  ADC1->CR1 &= ~((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4));                            // activer ADC_IN0
-  ADC1->CR1 &=~ ADC_CR1_SCAN; //(1<<8);                                         // vérifie que lma conversion a eu lieu (scan)
-  ADC1->CR1 |= ADC_CR1_RES_1; //(1<<25);                                                         // résolution sur 6 bit
+  RCC->CFGR &=~ (RCC_CFGR_MCOSEL_2|RCC_CFGR_MCOSEL_0); //((1<<26)|(1<<24));
+  RCC->CFGR |= RCC_CFGR_MCOSEL_1; //(1<<25)
+  ADC1->CR1 &= ~(ADC_CR1_AWDCH_0 | ADC_CR1_AWDCH_1 | ADC_CR1_AWDCH_2 | ADC_CR1_AWDCH_3 | ADC_CR1_AWDCH_4 ); //((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4));  // activer ADC_IN0
+  ADC1->CR1 &=~ ADC_CR1_SCAN; //(1<<8);   // vérifie que lma conversion a eu lieu (scan)
+  ADC1->CR1 |= ADC_CR1_RES_1; //(1<<25);     // résolution sur 6 bit
   ADC1->CR1 |= ADC_CR1_RES_0; //(1<<24);
-  RI->ICR &=~((1<<0)|(1<<1)|(1<<2)|(1<<3));                                     // roouting interface
-  ADC1->SQR1 &=~((1<<20)|(1<<21)|(1<<22)|(1<<23)|(1<<24));                       // une seule voie de convertion
-  ADC1->SQR5 &=~ ((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4));                           // first conversion
-  ADC1->CR2 &=~(1<<2);                                                          // Bank A
-  ADC1->CR2 |= ADC_CR2_CONT; //(1<<1);                                                          // continous mode
-  RI->ASCR1 &=~(1<<0);   
-  ADC1->CR2 |= (1<<0); // ADON ADC power on
-  while ((ADC1->SR & (1<<6))==0); //tant que l'ADC n'est pas prêt
+  RI->ICR &=~ (RI_ICR_IC1Z_0 | RI_ICR_IC1Z_1 | RI_ICR_IC1Z_2 | RI_ICR_IC1Z_3); //(1<<0)|(1<<1)|(1<<2)|(1<<3));   // roouting interface
+  ADC1->SQR1 &=~(ADC_SQR1_L_0 | ADC_SQR1_L_1 | ADC_SQR1_L_2 | ADC_SQR1_L_3 | ADC_SQR1_L_4); //(1<<20)|(1<<21)|(1<<22)|(1<<23)|(1<<24));  // une seule voie de convertion
+  ADC1->SQR5 &=~ (ADC_SQR5_SQ1_0 | ADC_SQR5_SQ1_1 | ADC_SQR5_SQ1_2 | ADC_SQR5_SQ1_3 | ADC_SQR5_SQ1_4); //(1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4));     // first conversion
+  ADC1->CR2 &=~ ADC_CR2_CFG; //(1<<2);  // Bank A
+  ADC1->CR2 |= ADC_CR2_CONT; //(1<<1);  // continous mode
+  RI->ASCR1 &=~RI_ASCR1_CH_0; //(1<<0);   // Analog swotch controlle by ADC
+  ADC1->CR2 |= ADC_CR2_ADON; //(1<<0); // ADON ADC power on
+  while ((ADC1->SR & ADC_SR_ADONS)==0); //tant que l'ADC n'est pas prêt
 
 }
 /******************************** FIN FONCTION ****************************************/
@@ -431,22 +429,22 @@ void LED (void)
 {
   if (var >=62)//LED verte s'allume
   {
-    GPIOA->ODR |= (1<<6);//active LEDV
-    GPIOA->ODR &=~ ((1<<7)|(1<<8));//désactive les led orange et rouge
+    GPIOA->ODR |= GPIO_ODR_ODR_6; // (1<<6);//active LEDV
+    GPIOA->ODR &=~ (GPIO_ODR_ODR_7 | GPIO_ODR_ODR_8);  //((1<<7)|(1<<8));//désactive les led orange et rouge
   }
   else
   {
     if(var < 62 && var > 60)//LED orange s'allume
     {
-      GPIOA->ODR &=~ ((1<<6)|(1<<8));//désactive les led verte et rouge
-      GPIOA->ODR |= (1<<7);//active LEDO
+      GPIOA->ODR &=~ (GPIO_ODR_ODR_6 | GPIO_ODR_ODR_8); //((1<<6)|(1<<8));//désactive les led verte et rouge
+      GPIOA->ODR |= GPIO_ODR_ODR_7; // (1<<7);//active LEDO
     }
     else
     {
       if(var <= 60)//LED rouge s'allume
       { 
-        GPIOA->ODR &=~ ((1<<6)|(1<<7));//désactive les led verte et orange
-        GPIOA->ODR |= (1<<8);//active LEDR
+        GPIOA->ODR &=~ (GPIO_ODR_ODR_6 | GPIO_ODR_ODR_7); //((1<<6)|(1<<7));//désactive les led verte et orange
+        GPIOA->ODR |= GPIO_ODR_ODR_8 ; //(1<<8);//active LEDR
       }
     }
   }
@@ -503,7 +501,7 @@ int main(void)
    
     USART3->CR1 |= USART_CR1_RE; //receive enable
     
-    GPIOB->ODR &=~ (1<<5);  // trigger à 0 sur PB5 capteur distance avant
+    GPIOB->ODR &=~ GPIO_ODR_ODR_5 ; //(1<<5);  // trigger à 0 sur PB5 capteur distance avant
     //GPIOA->ODR &= ~(1<<3); //trigger à 0 sur PA3 capteur distance arrière     
     
     
@@ -525,7 +523,7 @@ int main(void)
       if(distance < 3)
       {
                //arret marche avant
-               TIM4->CR1 &= ~(1<<0); // TIM4 counter disable 
+               TIM4->CR1 &=~ TIM_CR1_CEN ; //(1<<0); // TIM4 counter disable 
                TIM4->CCER &= ~(1<<0); //tim4 ch2 
       }
       else  
@@ -538,7 +536,7 @@ int main(void)
                 //active la marche avant PB7 et led PB9-PC5
                 TIM4->CR1 |= TIM_CR1_CEN; // TIM4 counter enable 
                 TIM4->CCER |= TIM_CCER_CC1E; // tim4_ch1 enable 
-                GPIOB->ODR |= (1<<8)|(1<<11); // turn the LED ON - PB8-PB117
+                GPIOB->ODR |= GPIO_ODR_ODR_8 | GPIO_ODR_ODR_11; //(1<<8)|(1<<11); // turn the LED ON - PB8-PB117
                 break;
           
           
