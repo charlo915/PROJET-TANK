@@ -617,6 +617,16 @@ void TX_BYTE(char data)
   
   while((USART3->SR & USART_SR_TC)==0);                                         // J'attend tant que la donnée n'a pas été transferé
 }
+
+void delay(void)
+{
+  int n=0;
+
+  for(n=0;n<100000;n++)
+  {
+          
+  }	
+}
    
 
 int main(void)
@@ -652,8 +662,10 @@ int main(void)
     
   while(1)
   {   
+      ////////////////////TEST /////////////////////////////
+    
       // Gestion capteur ultrason avant
-      Generation_Trigger_avant(); 
+      //Generation_Trigger_avant(); 
       
       // Gestion capteur ultrason arriere
       // Generation_Trigger_arriere();
