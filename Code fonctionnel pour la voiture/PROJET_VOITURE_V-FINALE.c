@@ -480,7 +480,7 @@ void ConfigInterrupt_PA2(void)
 
 
 /*=============================================================================*/
-/*=================== GENRATION TRIGGER POUR CAPTEUR AVANT ====================*/
+/*=================== GENERATION TRIGGER POUR CAPTEUR AVANT ====================*/
 /*=============================================================================*/
 
 void Generation_Trigger_avant(void)                                             // Generation du trigger pour le capteur avant sur PB5
@@ -494,7 +494,7 @@ void Generation_Trigger_avant(void)                                             
 
 
 /*=============================================================================*/
-/*================== GENRATION TRIGGER POUR CAPTEUR ARRIERE ===================*/
+/*================== GENERATION TRIGGER POUR CAPTEUR ARRIERE ===================*/
 /*=============================================================================*/
 
 void Generation_Trigger_arriere(void)                                           // Generation du trigger pour le capteur arriere sur PB3
@@ -618,6 +618,15 @@ void TX_BYTE(char data)
   while((USART3->SR & USART_SR_TC)==0);                                         // J'attend tant que la donnée n'a pas été transferé
 }
 
+/*void RX_BYTE (){
+  uint8_t data=0;             // On initialise la data 
+  while((USART3->SR & USART_SR_RXNE)==0){}; // On attend que la lecture soit prete
+  
+  data= USART3->DR ; // On met la data dans DR
+  printf("Data est egale a %d\n",data); // On affiche dans le terminal I/O
+  
+}*/
+
 void delay(void)
 {
   int n=0;
@@ -648,8 +657,8 @@ int main(void)
   TIM9_CONFIG(); 
   
   ConfigInterrupt_PA9();
-  //TIM10_CONFIG();
- // ConfigInterrupt_PA2();
+  TIM10_CONFIG();
+  ConfigInterrupt_PA2();
   
  
   ADC_INIT();  
@@ -657,7 +666,7 @@ int main(void)
     USART3->CR1 |= USART_CR1_RE;                                                // Receive enable
     
     GPIOB->ODR &=~ GPIO_ODR_ODR_5 ;                                             // Trigger à 0 sur PB5 capteur distance avant
-    //GPIOA->ODR &=~ GPIO_ODR_ODR_3;                                            // Trigger à 0 sur PA3 capteur distance arrière     
+    GPIOA->ODR &=~ GPIO_ODR_ODR_3;                                            // Trigger à 0 sur PA3 capteur distance arrière     
     
     
   while(1)
@@ -676,7 +685,7 @@ int main(void)
       // Autorisation des interruptions
       NVIC->ISER[0] |= NVIC_ISER_SETENA_23;                                     // Interruption EXTI9_5_IRQHandler & EXTI2_IRQHandler enable
    
-      calcul_Distance(largeurEcho); 
+      /*calcul_Distance(largeurEcho); 
      
     
       if(distance < 3)
@@ -686,16 +695,20 @@ int main(void)
                TIM4->CCER &= ~(1<<0);                                           // TIM4 CH2
       }
       else  
-      {   
-        
+      {   */
+        while((USART3->SR & USART_SR_RXNE)==0){}; // On attend que la lecture soit prete
         chaine = USART3->DR ; 
+        printf("On est dans le case %d\n",chaine);
         
-          switch(chaine)
+        //chaine=1;
+        
+          switch(1)
         {                    
         case '1' :  
                 // Active la marche avant PB7 et LED PB9-PC5
                 TIM4->CR1 |= TIM_CR1_CEN;                                       // TIM4 counter enable 
-                TIM4->CCER |= TIM_CCER_CC1E;                                    // TIM4 CH1 enable 
+                TIM4->CCER |= TIM_CCER_CC1E;
+                printf("On est dans le case %d\n",chaine);                      // TIM4 CH1 enable 
                 GPIOB->ODR |= (1<<8)|(1<<11);                                   // Allume les LEDS PB8-PB117
                 break;
           
@@ -709,4 +722,4 @@ int main(void)
       LED();                                                                    // Active les LEDS en fonction du niveau de tension 
        
   }
-}
+// }
